@@ -123,6 +123,11 @@
     border-color: hsl(var(--primary) / 0.3);
   }
 
+  .inline-code {
+    @apply bg-muted px-1.5 py-0.5 rounded text-primary text-sm;
+    font-family: var(--font-mono);
+  }
+
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
   }

@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import LearningPaths from "./pages/LearningPaths";
+import PathDetail from "./pages/PathDetail";
 import Labs from "./pages/Labs";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/paths" element={<ProtectedRoute><LearningPaths /></ProtectedRoute>} />
+            <Route path="/paths/:id" element={<ProtectedRoute><PathDetail /></ProtectedRoute>} />
             <Route path="/labs" element={<ProtectedRoute><Labs /></ProtectedRoute>} />
             <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
