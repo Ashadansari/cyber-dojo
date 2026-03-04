@@ -64,12 +64,29 @@ export default function PathDetail() {
     newCompleted.add(activeModule);
     setCompletedModules(newCompleted);
 
+    const currentModule = modules[activeModule];
+    const xpEarned = currentModule?.xp_reward || 10;
+
+    // Update path progress
     await supabase.from('user_path_progress').upsert({
       user_id: user.id,
       learning_path_id: id,
       completed_modules: newCompleted.size,
       completed_at: newCompleted.size === modules.length ? new Date().toISOString() : null,
     }, { onConflict: 'user_id,learning_path_id' });
+
+    // Award XP to profile
+    const { data: profileData } = await supabase.from('profiles').select('xp').eq('user_id', user.id).single();
+    const currentXp = profileData?.xp || 0;
+    await supabase.from('profiles').update({ xp: currentXp + xpEarned }).eq('user_id', user.id);
+
+    // Log activity
+    await supabase.from('user_activity').insert({
+      user_id: user.id,
+      activity_type: 'module_complete',
+      description: `Completed "${currentModule?.title}" in ${path?.title}`,
+      xp_earned: xpEarned,
+    });
 
     if (activeModule < modules.length - 1) {
       setActiveModule(activeModule + 1);
@@ -121,7 +138,7 @@ export default function PathDetail() {
         </div>
 
         <div className="flex gap-6 flex-col lg:flex-row">
-          {/* Sidebar - Module List */}
+          {/* Sidebar */}
           <div className="w-full lg:w-72 shrink-0">
             <div className="glass-card rounded-xl p-4 sticky top-20">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 font-mono">Modules</h3>
@@ -163,7 +180,6 @@ export default function PathDetail() {
                 </span>
               </div>
 
-              {/* Markdown-like content rendering */}
               <div className="prose-cyber">
                 <ModuleContent content={currentModule.content || ''} />
               </div>
@@ -205,7 +221,6 @@ export default function PathDetail() {
 }
 
 function ModuleContent({ content }: { content: string }) {
-  // Simple markdown-like renderer
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
   let inCodeBlock = false;
@@ -216,11 +231,8 @@ function ModuleContent({ content }: { content: string }) {
   let key = 0;
 
   const renderInline = (text: string) => {
-    // Bold
     text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Inline code
     text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-    // Links
     text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-primary hover:underline">$1</a>');
     return <span dangerouslySetInnerHTML={{ __html: text }} />;
   };
@@ -228,7 +240,7 @@ function ModuleContent({ content }: { content: string }) {
   const flushTable = () => {
     if (tableRows.length < 2) return;
     const headers = tableRows[0];
-    const body = tableRows.slice(2); // skip separator row
+    const body = tableRows.slice(2);
     elements.push(
       <div key={key++} className="overflow-x-auto my-4">
         <table className="w-full text-sm">
@@ -258,7 +270,6 @@ function ModuleContent({ content }: { content: string }) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Code blocks
     if (line.startsWith('```')) {
       if (inCodeBlock) {
         elements.push(
@@ -276,52 +287,35 @@ function ModuleContent({ content }: { content: string }) {
       continue;
     }
 
-    if (inCodeBlock) {
-      codeContent += line + '\n';
-      continue;
-    }
+    if (inCodeBlock) { codeContent += line + '\n'; continue; }
 
-    // Tables
     if (line.includes('|') && line.trim().startsWith('|')) {
       const cells = line.split('|').filter(c => c.trim() !== '' || false).map(c => c.trim()).filter(Boolean);
       if (!inTable) inTable = true;
       tableRows.push(cells);
-      // Check if next line is not a table
-      if (i + 1 >= lines.length || !lines[i + 1].includes('|')) {
-        flushTable();
-      }
+      if (i + 1 >= lines.length || !lines[i + 1].includes('|')) flushTable();
       continue;
     }
 
     if (inTable) flushTable();
 
-    // Headers
     if (line.startsWith('### ')) {
       elements.push(<h3 key={key++} className="text-lg font-bold text-foreground mt-6 mb-2">{line.slice(4)}</h3>);
     } else if (line.startsWith('## ')) {
       elements.push(<h2 key={key++} className="text-xl font-bold text-foreground mt-8 mb-3 text-gradient-cyber">{line.slice(3)}</h2>);
     } else if (line.startsWith('# ')) {
       elements.push(<h1 key={key++} className="text-2xl font-bold text-foreground mt-8 mb-3">{line.slice(2)}</h1>);
-    }
-    // List items
-    else if (line.match(/^- \*\*/)) {
-      elements.push(<li key={key++} className="text-muted-foreground ml-4 mb-1 list-disc">{renderInline(line.slice(2))}</li>);
-    } else if (line.startsWith('- ')) {
+    } else if (line.match(/^- \*\*/) || line.startsWith('- ')) {
       elements.push(<li key={key++} className="text-muted-foreground ml-4 mb-1 list-disc">{renderInline(line.slice(2))}</li>);
     } else if (line.match(/^\d+\. /)) {
       elements.push(<li key={key++} className="text-muted-foreground ml-4 mb-1 list-decimal">{renderInline(line.replace(/^\d+\. /, ''))}</li>);
-    }
-    // Empty line
-    else if (line.trim() === '') {
+    } else if (line.trim() === '') {
       // skip
-    }
-    // Paragraph
-    else {
+    } else {
       elements.push(<p key={key++} className="text-muted-foreground mb-3 leading-relaxed">{renderInline(line)}</p>);
     }
   }
 
   if (inTable) flushTable();
-
   return <div>{elements}</div>;
 }
