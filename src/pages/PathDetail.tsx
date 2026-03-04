@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, CheckCircle, Circle, Loader2, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ModuleContent from '@/components/ModuleContent';
 
 interface Module {
   id: string;
@@ -22,6 +23,7 @@ interface PathInfo {
   description: string;
   category: string;
   difficulty: string;
+  total_modules: number;
 }
 
 export default function PathDetail() {
@@ -67,7 +69,7 @@ export default function PathDetail() {
     const currentModule = modules[activeModule];
     const xpEarned = currentModule?.xp_reward || 10;
 
-    // Update path progress
+    // Update path progress using actual module count
     await supabase.from('user_path_progress').upsert({
       user_id: user.id,
       learning_path_id: id,
@@ -115,7 +117,8 @@ export default function PathDetail() {
   }
 
   const currentModule = modules[activeModule];
-  const progress = modules.length > 0 ? (completedModules.size / modules.length) * 100 : 0;
+  // Use actual modules.length for progress calculation
+  const progress = (completedModules.size / modules.length) * 100;
 
   return (
     <DashboardLayout>
@@ -140,7 +143,7 @@ export default function PathDetail() {
         <div className="flex gap-6 flex-col lg:flex-row">
           {/* Sidebar */}
           <div className="w-full lg:w-72 shrink-0">
-            <div className="glass-card rounded-xl p-4 sticky top-20">
+            <div className="glass-card rounded-xl p-4 sticky top-20 max-h-[70vh] overflow-y-auto">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 font-mono">Modules</h3>
               <div className="space-y-1">
                 {modules.map((mod, i) => (
@@ -199,7 +202,7 @@ export default function PathDetail() {
                     <CheckCircle className="h-4 w-4" /> Completed
                   </span>
                 ) : (
-                  <Button variant="cyber" onClick={markComplete}>
+                  <Button onClick={markComplete} className="bg-gradient-cyber text-primary-foreground hover:opacity-90">
                     Mark Complete & Continue
                   </Button>
                 )}
@@ -218,104 +221,4 @@ export default function PathDetail() {
       </div>
     </DashboardLayout>
   );
-}
-
-function ModuleContent({ content }: { content: string }) {
-  const lines = content.split('\n');
-  const elements: React.ReactNode[] = [];
-  let inCodeBlock = false;
-  let codeContent = '';
-  let codeLang = '';
-  let inTable = false;
-  let tableRows: string[][] = [];
-  let key = 0;
-
-  const renderInline = (text: string) => {
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    text = text.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-primary hover:underline">$1</a>');
-    return <span dangerouslySetInnerHTML={{ __html: text }} />;
-  };
-
-  const flushTable = () => {
-    if (tableRows.length < 2) return;
-    const headers = tableRows[0];
-    const body = tableRows.slice(2);
-    elements.push(
-      <div key={key++} className="overflow-x-auto my-4">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              {headers.map((h, i) => (
-                <th key={i} className="text-left p-2 font-mono text-primary text-xs uppercase">{h.trim()}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {body.map((row, ri) => (
-              <tr key={ri} className="border-b border-border/30">
-                {row.map((cell, ci) => (
-                  <td key={ci} className="p-2 text-muted-foreground">{renderInline(cell.trim())}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-    tableRows = [];
-    inTable = false;
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (line.startsWith('```')) {
-      if (inCodeBlock) {
-        elements.push(
-          <pre key={key++} className="bg-background rounded-lg p-4 my-4 overflow-x-auto border border-border">
-            <code className="text-sm font-mono text-foreground">{codeContent.trim()}</code>
-          </pre>
-        );
-        codeContent = '';
-        inCodeBlock = false;
-      } else {
-        if (inTable) flushTable();
-        codeLang = line.slice(3).trim();
-        inCodeBlock = true;
-      }
-      continue;
-    }
-
-    if (inCodeBlock) { codeContent += line + '\n'; continue; }
-
-    if (line.includes('|') && line.trim().startsWith('|')) {
-      const cells = line.split('|').filter(c => c.trim() !== '' || false).map(c => c.trim()).filter(Boolean);
-      if (!inTable) inTable = true;
-      tableRows.push(cells);
-      if (i + 1 >= lines.length || !lines[i + 1].includes('|')) flushTable();
-      continue;
-    }
-
-    if (inTable) flushTable();
-
-    if (line.startsWith('### ')) {
-      elements.push(<h3 key={key++} className="text-lg font-bold text-foreground mt-6 mb-2">{line.slice(4)}</h3>);
-    } else if (line.startsWith('## ')) {
-      elements.push(<h2 key={key++} className="text-xl font-bold text-foreground mt-8 mb-3 text-gradient-cyber">{line.slice(3)}</h2>);
-    } else if (line.startsWith('# ')) {
-      elements.push(<h1 key={key++} className="text-2xl font-bold text-foreground mt-8 mb-3">{line.slice(2)}</h1>);
-    } else if (line.match(/^- \*\*/) || line.startsWith('- ')) {
-      elements.push(<li key={key++} className="text-muted-foreground ml-4 mb-1 list-disc">{renderInline(line.slice(2))}</li>);
-    } else if (line.match(/^\d+\. /)) {
-      elements.push(<li key={key++} className="text-muted-foreground ml-4 mb-1 list-decimal">{renderInline(line.replace(/^\d+\. /, ''))}</li>);
-    } else if (line.trim() === '') {
-      // skip
-    } else {
-      elements.push(<p key={key++} className="text-muted-foreground mb-3 leading-relaxed">{renderInline(line)}</p>);
-    }
-  }
-
-  if (inTable) flushTable();
-  return <div>{elements}</div>;
 }
