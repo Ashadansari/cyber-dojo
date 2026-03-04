@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 import { Terminal, Shield, Bug, Globe, Network, Lock, Server, Cpu, Loader2 } from 'lucide-react';
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -38,15 +39,29 @@ interface LearningPath {
 }
 
 export default function LearningPaths() {
+  const { user } = useAuth();
   const [paths, setPaths] = useState<LearningPath[]>([]);
+  const [progressMap, setProgressMap] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from('learning_paths').select('*').then(({ data }) => {
-      setPaths(data || []);
+    const fetchData = async () => {
+      const { data: pathsData } = await supabase.from('learning_paths').select('*');
+      setPaths(pathsData || []);
+
+      if (user) {
+        const { data: progressData } = await supabase
+          .from('user_path_progress')
+          .select('learning_path_id, completed_modules')
+          .eq('user_id', user.id);
+        const map = new Map<string, number>();
+        (progressData || []).forEach((p: any) => map.set(p.learning_path_id, p.completed_modules || 0));
+        setProgressMap(map);
+      }
       setLoading(false);
-    });
-  }, []);
+    };
+    fetchData();
+  }, [user]);
 
   if (loading) {
     return (
@@ -70,24 +85,32 @@ export default function LearningPaths() {
           {paths.map((path) => {
             const Icon = iconMap[path.icon || ''] || Terminal;
             const color = colorMap[path.category] || 'text-primary';
+            const completed = progressMap.get(path.id) || 0;
+            const total = path.total_modules || 1;
+            const pct = Math.round((completed / total) * 100);
             return (
               <Link key={path.id} to={`/paths/${path.id}`} className="block">
                 <div className="glass-card rounded-xl p-6 hover:border-primary/30 transition-all cursor-pointer group h-full">
                   <div className="flex items-start justify-between mb-4">
                     <Icon className={`h-8 w-8 ${color} group-hover:scale-110 transition-transform`} />
-                    <Badge className={`${difficultyColor[path.difficulty] || ''} border-0 text-xs font-mono capitalize`}>
-                      {path.difficulty}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {completed > 0 && (
+                        <span className="text-xs font-mono text-primary">{pct}%</span>
+                      )}
+                      <Badge className={`${difficultyColor[path.difficulty] || ''} border-0 text-xs font-mono capitalize`}>
+                        {path.difficulty}
+                      </Badge>
+                    </div>
                   </div>
                   <h3 className="text-lg font-bold text-foreground mb-1">{path.title}</h3>
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{path.description}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground font-mono">
-                    <span>{path.total_modules} modules</span>
+                    <span>{completed > 0 ? `${completed}/${total}` : `${total}`} modules</span>
                     <span>~{path.estimated_hours}h</span>
                     <span className="text-primary/60">{path.category}</span>
                   </div>
                   <div className="mt-4 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full bg-gradient-cyber rounded-full w-0" />
+                    <div className="h-full bg-gradient-cyber rounded-full transition-all" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               </Link>
