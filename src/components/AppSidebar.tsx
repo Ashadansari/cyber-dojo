@@ -1,6 +1,6 @@
 import { LayoutDashboard, BookOpen, FlaskConical, Trophy, User, LogOut, Terminal } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
-import { useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Sidebar,
@@ -26,8 +26,13 @@ const navItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const location = useLocation();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -58,8 +63,19 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-3 border-t border-border">
-        <Button variant="ghost" onClick={signOut} className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive">
+      <SidebarFooter className="p-3 border-t border-border space-y-2">
+        {/* User info */}
+        {!collapsed && user && (
+          <div className="px-2 py-1.5">
+            <p className="text-sm font-medium text-foreground truncate">{user.user_metadata?.username || 'Hacker'}</p>
+            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+          </div>
+        )}
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+        >
           <LogOut className="h-5 w-5 shrink-0" />
           {!collapsed && <span>Log Out</span>}
         </Button>
