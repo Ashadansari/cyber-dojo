@@ -1,7 +1,9 @@
 import React from 'react';
 
 export default function ModuleContent({ content }: { content: string }) {
-  const lines = content.split('\n');
+  // Handle literal \n strings from database content
+  const normalizedContent = content.replace(/\\n/g, '\n');
+  const lines = normalizedContent.split('\n');
   const elements: React.ReactNode[] = [];
   let inCodeBlock = false;
   let codeContent = '';
