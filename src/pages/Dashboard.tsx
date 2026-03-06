@@ -33,35 +33,47 @@ interface Activity {
   created_at: string;
 }
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const WEEKS = 53;
 
 function buildHeatmapData() {
+  // Build a full year: from Jan 1 of current year to today
   const today = new Date();
-  const todayDow = today.getDay(); // 0=Sun
-  // End at today, start WEEKS*7 days ago aligned to Sunday
+  const year = today.getFullYear();
+  const jan1 = new Date(year, 0, 1);
+  
+  // Adjust start to nearest Monday before Jan 1 (ISO week style: Mon=0)
+  const jan1Dow = jan1.getDay(); // 0=Sun
+  const isoDay = jan1Dow === 0 ? 6 : jan1Dow - 1; // Convert to Mon=0 format
+  const startDate = new Date(jan1);
+  startDate.setDate(jan1.getDate() - isoDay);
+
   const days: { date: string; dow: number; weekIdx: number }[] = [];
-  const endOffset = (WEEKS - 1) * 7 + todayDow;
-  for (let i = endOffset; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    const dow = d.getDay();
-    const weekIdx = Math.floor((endOffset - i) / 7);
+  const current = new Date(startDate);
+  let weekIdx = 0;
+
+  while (current <= today) {
+    const dateStr = current.toISOString().split('T')[0];
+    const jsDay = current.getDay();
+    const dow = jsDay === 0 ? 6 : jsDay - 1; // Mon=0, Sun=6
     days.push({ date: dateStr, dow, weekIdx });
+    
+    current.setDate(current.getDate() + 1);
+    if (current.getDay() === 1 && current <= today) weekIdx++; // new week on Monday
   }
-  // Extract month labels
+
+  // Extract month labels positioned at first Monday of each month
   const months: { label: string; weekIdx: number }[] = [];
   let lastMonth = -1;
   days.forEach((d) => {
     const m = new Date(d.date).getMonth();
-    if (m !== lastMonth && d.dow === 0) {
+    if (m !== lastMonth && d.dow === 0) { // dow 0 = Monday
       months.push({ label: MONTH_NAMES[m], weekIdx: d.weekIdx });
       lastMonth = m;
     }
   });
-  return { days, months, totalWeeks: WEEKS };
+
+  return { days, months, totalWeeks: weekIdx + 1 };
 }
 
 export default function Dashboard() {
@@ -229,7 +241,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Flame className="h-5 w-5 text-[hsl(var(--cyber-orange))]" />
-              {totalActivities} contributions in the last {WEEKS} weeks
+              {totalActivities} contributions in {new Date().getFullYear()}
             </h2>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>Less</span>
@@ -245,13 +257,12 @@ export default function Dashboard() {
           <div className="overflow-x-auto">
             <TooltipProvider delayDuration={100}>
               <div className="inline-flex gap-[3px]">
-                {/* Day labels */}
-                <div className="flex flex-col gap-[3px] mr-1 pt-0">
+                <div className="flex flex-col gap-[3px] mr-2 pt-0">
                   {DAY_LABELS.map((label, i) => (
-                    <div key={label} className="h-[13px] flex items-center">
-                      {i % 2 === 1 ? (
-                        <span className="text-[10px] text-muted-foreground font-mono leading-none pr-1">{label}</span>
-                      ) : <span className="text-[10px] invisible font-mono leading-none pr-1">Mon</span>}
+                    <div key={label} className="h-[13px] flex items-center justify-end">
+                      {i % 2 === 0 ? (
+                        <span className="text-[10px] text-muted-foreground font-mono leading-none">{label}</span>
+                      ) : <span className="text-[10px] invisible font-mono leading-none">Mon</span>}
                     </div>
                   ))}
                 </div>
@@ -281,12 +292,12 @@ export default function Dashboard() {
             </TooltipProvider>
 
             {/* Month labels */}
-            <div className="flex mt-1 ml-8">
+            <div className="relative h-4 ml-[38px]" style={{ width: `${heatmap.totalWeeks * 16}px` }}>
               {heatmap.months.map((m, i) => (
                 <span
                   key={i}
-                  className="text-[10px] text-muted-foreground font-mono"
-                  style={{ marginLeft: i === 0 ? `${m.weekIdx * 16}px` : undefined, width: '48px' }}
+                  className="absolute text-[10px] text-muted-foreground font-mono"
+                  style={{ left: `${m.weekIdx * 16}px` }}
                 >
                   {m.label}
                 </span>
