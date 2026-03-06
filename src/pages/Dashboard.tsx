@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { Shield, Zap, Target, Award, Flame, TrendingUp, Loader2, BookOpen, FlaskConical, CheckCircle, Clock } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Profile {
   xp: number;
@@ -32,6 +33,38 @@ interface Activity {
   created_at: string;
 }
 
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKS = 20;
+const TOTAL_DAYS = WEEKS * 7;
+
+function buildHeatmapData() {
+  const today = new Date();
+  const todayDow = today.getDay(); // 0=Sun
+  // End at today, start WEEKS*7 days ago aligned to Sunday
+  const days: { date: string; dow: number; weekIdx: number }[] = [];
+  const endOffset = (WEEKS - 1) * 7 + todayDow;
+  for (let i = endOffset; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dow = d.getDay();
+    const weekIdx = Math.floor((endOffset - i) / 7);
+    days.push({ date: dateStr, dow, weekIdx });
+  }
+  // Extract month labels
+  const months: { label: string; weekIdx: number }[] = [];
+  let lastMonth = -1;
+  days.forEach((d) => {
+    const m = new Date(d.date).getMonth();
+    if (m !== lastMonth && d.dow === 0) {
+      months.push({ label: MONTH_NAMES[m], weekIdx: d.weekIdx });
+      lastMonth = m;
+    }
+  });
+  return { days, months, totalWeeks: WEEKS };
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -40,30 +73,75 @@ export default function Dashboard() {
   const [activityMap, setActivityMap] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
 
+  const heatmap = useMemo(() => buildHeatmapData(), []);
+
+  const rebuildMap = useCallback((acts: Activity[]) => {
+    const map = new Map<string, number>();
+    acts.forEach((a) => {
+      const day = new Date(a.created_at).toISOString().split('T')[0];
+      map.set(day, (map.get(day) || 0) + 1);
+    });
+    setActivityMap(map);
+  }, []);
+
+  // Initial data fetch
   useEffect(() => {
     if (!user) return;
-
     Promise.all([
       supabase.from('profiles').select('xp, level, rank, streak_days, completed_labs, badges_earned').eq('user_id', user.id).single(),
       supabase.from('user_path_progress').select('completed_modules, learning_path:learning_paths(id, title, total_modules)').eq('user_id', user.id),
-      supabase.from('user_activity').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('user_activity').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50),
     ]).then(([profileRes, pathsRes, activityRes]) => {
       if (profileRes.data) setProfile(profileRes.data as unknown as Profile);
       if (pathsRes.data) setPaths(pathsRes.data as unknown as PathProgress[]);
-      
       const actData = (activityRes.data || []) as Activity[];
       setActivities(actData);
-
-      // Build activity heatmap
-      const map = new Map<string, number>();
-      actData.forEach((a) => {
-        const day = new Date(a.created_at).toISOString().split('T')[0];
-        map.set(day, (map.get(day) || 0) + 1);
-      });
-      setActivityMap(map);
+      rebuildMap(actData);
       setLoading(false);
     });
-  }, [user]);
+  }, [user, rebuildMap]);
+
+  // Realtime subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_activity',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newAct = payload.new as Activity;
+          setActivities((prev) => {
+            const updated = [newAct, ...prev].slice(0, 50);
+            rebuildMap(updated);
+            return updated;
+          });
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        const updated = payload.new as any;
+        setProfile({
+          xp: updated.xp ?? 0,
+          level: updated.level ?? 1,
+          rank: updated.rank ?? 'Script Kiddie',
+          streak_days: updated.streak_days ?? 0,
+          completed_labs: updated.completed_labs ?? 0,
+          badges_earned: updated.badges_earned ?? 0,
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, rebuildMap]);
 
   if (loading) {
     return (
@@ -86,18 +164,15 @@ export default function Dashboard() {
     { icon: TrendingUp, label: 'Rank', value: p.rank, color: 'text-destructive', bg: 'bg-destructive/10' },
   ];
 
-  // Generate last 49 days for heatmap
-  const heatmapDays: string[] = [];
-  for (let i = 48; i >= 0; i--) {
-    heatmapDays.push(new Date(Date.now() - i * 86400000).toISOString().split('T')[0]);
-  }
-
   const getHeatColor = (count: number) => {
-    if (count === 0) return 'bg-muted';
-    if (count === 1) return 'bg-primary/20';
-    if (count <= 3) return 'bg-primary/40';
-    return 'bg-primary/70';
+    if (count === 0) return 'bg-muted/50';
+    if (count === 1) return 'bg-primary/25';
+    if (count <= 3) return 'bg-primary/50';
+    if (count <= 6) return 'bg-primary/75';
+    return 'bg-primary';
   };
+
+  const totalActivities = activities.length;
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -120,6 +195,13 @@ export default function Dashboard() {
     return new Date(dateStr).toLocaleDateString();
   };
 
+  // Build grid columns for GitHub-style layout
+  const columns: { date: string; dow: number }[][] = [];
+  heatmap.days.forEach((d) => {
+    if (!columns[d.weekIdx]) columns[d.weekIdx] = [];
+    columns[d.weekIdx].push(d);
+  });
+
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8">
@@ -141,6 +223,77 @@ export default function Dashboard() {
               <div className="text-xs text-muted-foreground">{stat.label}</div>
             </div>
           ))}
+        </div>
+
+        {/* GitHub-style Activity Heatmap */}
+        <div className="glass-card rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Flame className="h-5 w-5 text-[hsl(var(--cyber-orange))]" />
+              {totalActivities} contributions in the last {WEEKS} weeks
+            </h2>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Less</span>
+              <div className="w-2.5 h-2.5 rounded-[3px] bg-muted/50" />
+              <div className="w-2.5 h-2.5 rounded-[3px] bg-primary/25" />
+              <div className="w-2.5 h-2.5 rounded-[3px] bg-primary/50" />
+              <div className="w-2.5 h-2.5 rounded-[3px] bg-primary/75" />
+              <div className="w-2.5 h-2.5 rounded-[3px] bg-primary" />
+              <span>More</span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <TooltipProvider delayDuration={100}>
+              <div className="inline-flex gap-[3px]">
+                {/* Day labels */}
+                <div className="flex flex-col gap-[3px] mr-1 pt-0">
+                  {DAY_LABELS.map((label, i) => (
+                    <div key={label} className="h-[13px] flex items-center">
+                      {i % 2 === 1 ? (
+                        <span className="text-[10px] text-muted-foreground font-mono leading-none pr-1">{label}</span>
+                      ) : <span className="text-[10px] invisible font-mono leading-none pr-1">Mon</span>}
+                    </div>
+                  ))}
+                </div>
+                {/* Weeks */}
+                {columns.map((week, wIdx) => (
+                  <div key={wIdx} className="flex flex-col gap-[3px]">
+                    {Array.from({ length: 7 }, (_, dow) => {
+                      const cell = week.find((d) => d.dow === dow);
+                      if (!cell) return <div key={dow} className="w-[13px] h-[13px]" />;
+                      const count = activityMap.get(cell.date) || 0;
+                      return (
+                        <Tooltip key={dow}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={`w-[13px] h-[13px] rounded-[3px] ${getHeatColor(count)} transition-colors hover:ring-1 hover:ring-foreground/20 cursor-default`}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs font-mono bg-popover border-border">
+                            <strong>{count} {count === 1 ? 'contribution' : 'contributions'}</strong> on {new Date(cell.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </TooltipProvider>
+
+            {/* Month labels */}
+            <div className="flex mt-1 ml-8">
+              {heatmap.months.map((m, i) => (
+                <span
+                  key={i}
+                  className="text-[10px] text-muted-foreground font-mono"
+                  style={{ marginLeft: i === 0 ? `${m.weekIdx * 16}px` : undefined, width: '48px' }}
+                >
+                  {m.label}
+                </span>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -186,11 +339,18 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Recent Activity Feed */}
+          {/* Recent Activity Feed - Realtime */}
           <div className="glass-card rounded-xl p-6">
             <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
               <Clock className="h-5 w-5 text-accent" />
               Recent Activity
+              <span className="ml-auto flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
+                <span className="text-[10px] text-muted-foreground font-mono uppercase">Live</span>
+              </span>
             </h2>
             {activities.length > 0 ? (
               <div className="space-y-1 max-h-[320px] overflow-y-auto pr-1">
@@ -215,31 +375,6 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Complete modules and labs to see activity here</p>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Activity Heatmap */}
-        <div className="glass-card rounded-xl p-6">
-          <h2 className="text-lg font-bold text-foreground mb-4">Activity Heatmap</h2>
-          <div className="grid grid-cols-7 gap-1.5">
-            {heatmapDays.map((day) => (
-              <div
-                key={day}
-                title={`${day}: ${activityMap.get(day) || 0} activities`}
-                className={`aspect-square rounded-sm ${getHeatColor(activityMap.get(day) || 0)} transition-colors hover:ring-1 hover:ring-primary/30`}
-              />
-            ))}
-          </div>
-          <div className="flex items-center justify-between mt-3">
-            <p className="text-xs text-muted-foreground font-mono">Last 7 weeks</p>
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span>Less</span>
-              <div className="w-3 h-3 rounded-sm bg-muted" />
-              <div className="w-3 h-3 rounded-sm bg-primary/20" />
-              <div className="w-3 h-3 rounded-sm bg-primary/40" />
-              <div className="w-3 h-3 rounded-sm bg-primary/70" />
-              <span>More</span>
-            </div>
           </div>
         </div>
       </div>
