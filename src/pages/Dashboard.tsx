@@ -35,8 +35,7 @@ interface Activity {
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const WEEKS = 20;
-const TOTAL_DAYS = WEEKS * 7;
+const WEEKS = 53;
 
 function buildHeatmapData() {
   const today = new Date();
