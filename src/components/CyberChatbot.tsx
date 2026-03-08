@@ -89,10 +89,10 @@ export default function CyberChatbot() {
           <button
             onClick={() => setIsOpen(true)}
             className="flex items-center justify-center hover:scale-110 transition-transform drop-shadow-[0_0_16px_hsl(var(--primary)/0.5)] animate-[float_3s_ease-in-out_infinite]"
-            style={{ width: '110px', height: '110px' }}
+            style={{ width: '80px', height: '80px' }}
             aria-label="Open CyberBot"
           >
-            <img src="/favicon.png" alt="CyberBot" style={{ width: '110px', height: '110px' }} className="group-hover:scale-110 transition-transform" />
+            <img src="/favicon.png" alt="CyberBot" style={{ width: '80px', height: '80px' }} className="group-hover:scale-110 transition-transform" />
           </button>
         </div>
       )}
