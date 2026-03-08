@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Trash2, Square, Bot, User } from 'lucide-react';
+import { X, Send, Trash2, Square, User } from 'lucide-react';
 import { useCyberChat } from '@/hooks/useCyberChat';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'react-router-dom';
