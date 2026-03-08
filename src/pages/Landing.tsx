@@ -114,14 +114,27 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="container flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Terminal className="h-5 w-5 text-primary" />
-            <span className="font-mono font-bold text-gradient-cyber">CyberForge</span>
+      {/* Contact & Footer */}
+      <footer className="border-t border-border py-12">
+        <div className="container">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            <div className="flex items-center gap-2">
+              <Terminal className="h-5 w-5 text-primary" />
+              <span className="font-mono font-bold text-gradient-cyber">CyberForge</span>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-2">Contact Us</h4>
+              <a href="mailto:webashad12@gmail.com" className="text-sm text-muted-foreground hover:text-primary transition-colors block">webashad12@gmail.com</a>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-foreground mb-2">Phone</h4>
+              <a href="tel:+919162592334" className="text-sm text-muted-foreground hover:text-primary transition-colors block">+91 9162592334</a>
+              <a href="tel:+9779829336233" className="text-sm text-muted-foreground hover:text-primary transition-colors block">+977 9829336233</a>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 CyberForge. All rights reserved.</p>
+          <div className="border-t border-border pt-6 text-center">
+            <p className="text-sm text-muted-foreground">© 2026 CyberForge. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>
