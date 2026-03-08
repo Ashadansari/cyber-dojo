@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import LearningPaths from "./pages/LearningPaths";
 import PathDetail from "./pages/PathDetail";
 import Labs from "./pages/Labs";
+import LabDetail from "./pages/LabDetail";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";

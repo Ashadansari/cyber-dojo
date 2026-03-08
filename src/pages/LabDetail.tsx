@@ -68,7 +68,7 @@ export default function LabDetail() {
         : Promise.resolve({ data: [] }),
     ]).then(([labRes, chalRes, compRes]) => {
       setLab(labRes.data as Lab);
-      setChallenges((chalRes.data || []) as Challenge[]);
+      setChallenges((chalRes.data || []) as unknown as Challenge[]);
       setCompletedIds(new Set((compRes.data || []).map((c: any) => c.challenge_id)));
       setLoading(false);
       if (chalRes.data && chalRes.data.length > 0) {
