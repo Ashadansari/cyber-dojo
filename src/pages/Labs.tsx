@@ -71,7 +71,7 @@ export default function Labs() {
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <Badge className={`${diffColor[lab.difficulty] || ''} border-0 text-xs font-mono capitalize`}>{lab.difficulty}</Badge>
-                <Button variant="outline" size="sm" className="gap-1.5">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(`/labs/${lab.id}`)}>
                   <Play className="h-3.5 w-3.5" /> Start
                 </Button>
               </div>
