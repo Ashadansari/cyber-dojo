@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Trash2, Square, Bot, User } from 'lucide-react';
+import { X, Send, Trash2, Square, User } from 'lucide-react';
 import { useCyberChat } from '@/hooks/useCyberChat';
 import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 
+const BotLogo = ({ className = "h-6 w-6" }: { className?: string }) => (
+  <img src="/favicon.png" alt="CyberBot" className={className} />
+);
 const QUICK_PROMPTS = [
   '🛡️ What learning path should I start with?',
   '🔍 Explain how SQL injection works',
@@ -82,7 +85,7 @@ export default function CyberChatbot() {
           className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-cyber shadow-neon flex items-center justify-center hover:scale-110 transition-transform animate-pulse-glow group"
           aria-label="Open CyberBot"
         >
-          <MessageSquare className="h-6 w-6 text-primary-foreground group-hover:scale-110 transition-transform" />
+          <BotLogo className="h-7 w-7 group-hover:scale-110 transition-transform" />
         </button>
       )}
 
@@ -91,7 +94,7 @@ export default function CyberChatbot() {
         <div className="fixed bottom-6 right-6 z-50 w-[380px] h-[560px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl shadow-[hsl(var(--primary)/0.1)] overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gradient-cyber">
-            <Bot className="h-6 w-6 text-primary-foreground" />
+            <BotLogo className="h-6 w-6" />
             <div className="flex-1">
               <h3 className="text-sm font-bold text-primary-foreground font-mono">CyberBot</h3>
               <p className="text-[10px] text-primary-foreground/70">AI Security Tutor</p>
@@ -116,7 +119,7 @@ export default function CyberChatbot() {
             {messages.length === 0 ? (
               <div className="space-y-4">
                 <div className="text-center py-4">
-                  <Bot className="h-10 w-10 text-primary mx-auto mb-3 opacity-60" />
+                  <BotLogo className="h-10 w-10 mx-auto mb-3 opacity-60" />
                   <p className="text-sm text-muted-foreground">
                     Hey hacker! 👋 I'm <span className="text-primary font-mono">CyberBot</span>, your AI security tutor.
                   </p>
@@ -150,7 +153,7 @@ export default function CyberChatbot() {
                     {msg.role === 'user' ? (
                       <User className="h-3.5 w-3.5 text-primary" />
                     ) : (
-                      <Bot className="h-3.5 w-3.5 text-primary-foreground" />
+                      <BotLogo className="h-5 w-5" />
                     )}
                   </div>
                   <div className={`max-w-[280px] rounded-xl px-3 py-2 text-sm ${
@@ -173,7 +176,7 @@ export default function CyberChatbot() {
             {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
               <div className="flex gap-2.5">
                 <div className="shrink-0 w-7 h-7 rounded-full bg-gradient-cyber flex items-center justify-center">
-                  <Bot className="h-3.5 w-3.5 text-primary-foreground" />
+                  <BotLogo className="h-5 w-5" />
                 </div>
                 <div className="bg-muted/50 rounded-xl px-3 py-2">
                   <div className="flex gap-1">
