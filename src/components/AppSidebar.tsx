@@ -1,7 +1,8 @@
-import { LayoutDashboard, BookOpen, FlaskConical, Trophy, User, LogOut, Terminal } from 'lucide-react';
+import { LayoutDashboard, BookOpen, FlaskConical, Trophy, User, LogOut, Terminal, Settings, Sun, Moon, Monitor } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +15,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const navItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
@@ -23,10 +25,17 @@ const navItems = [
   { title: 'Profile', url: '/profile', icon: User },
 ];
 
+const themeOptions = [
+  { value: 'system' as const, icon: Monitor, label: 'System' },
+  { value: 'light' as const, icon: Sun, label: 'Light' },
+  { value: 'dark' as const, icon: Moon, label: 'Dark' },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { signOut, user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -64,13 +73,39 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-3 border-t border-border space-y-2">
-        {/* User info */}
-        {!collapsed && user && (
-          <div className="px-2 py-1.5">
-            <p className="text-sm font-medium text-foreground truncate">{user.user_metadata?.username || 'Hacker'}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-          </div>
-        )}
+        {/* User info + settings */}
+        <div className="flex items-center gap-2 px-2 py-1.5">
+          {!collapsed && user && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{user.user_metadata?.username || 'Hacker'}</p>
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            </div>
+          )}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors shrink-0">
+                <Settings className="h-4 w-4" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="top" align="start" className="w-48 p-2">
+              <p className="text-xs font-semibold text-muted-foreground mb-2 px-2">Theme</p>
+              {themeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setTheme(opt.value)}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors ${
+                    theme === opt.value
+                      ? 'bg-primary/10 text-primary font-medium'
+                      : 'text-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  <opt.icon className="h-4 w-4" />
+                  {opt.label}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
         <Button
           variant="ghost"
           onClick={handleLogout}

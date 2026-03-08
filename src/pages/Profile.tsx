@@ -273,35 +273,6 @@ export default function Profile() {
             </div>
           )}
         </div>
-        {/* Settings */}
-        <div className="glass-card rounded-xl p-6">
-          <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-            <Sun className="h-5 w-5 text-[hsl(var(--cyber-yellow))]" /> Settings
-          </h2>
-          <div>
-            <label className="text-sm font-medium text-foreground mb-3 block">Theme</label>
-            <div className="flex gap-2">
-              {([
-                { value: 'system' as const, icon: Monitor, label: 'System' },
-                { value: 'light' as const, icon: Sun, label: 'Light' },
-                { value: 'dark' as const, icon: Moon, label: 'Dark' },
-              ]).map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setTheme(opt.value)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
-                    theme === opt.value
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-background text-muted-foreground hover:border-primary/30'
-                  }`}
-                >
-                  <opt.icon className="h-4 w-4" />
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
     </DashboardLayout>
   );
