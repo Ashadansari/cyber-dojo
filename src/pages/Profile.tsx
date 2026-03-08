@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
-import { Shield, Zap, Target, Award, Flame, Calendar, Loader2, BookOpen } from 'lucide-react';
+import { Shield, Zap, Target, Award, Flame, Calendar, Loader2, BookOpen, FlaskConical, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Profile {
   username: string | null;
@@ -30,12 +30,47 @@ interface PathProgress {
   };
 }
 
+interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: string;
+  condition_type: string;
+  condition_value: number;
+}
+
+interface UserBadge {
+  badge_id: string;
+  earned_at: string;
+}
+
 const LEVEL_XP = [0, 0, 100, 250, 500, 800, 1200, 1800, 2500, 3500, 5000];
+
+const ICON_MAP: Record<string, React.ElementType> = {
+  zap: Zap,
+  shield: Shield,
+  'flask-conical': FlaskConical,
+  flame: Flame,
+  'book-open': BookOpen,
+  award: Award,
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  xp: 'from-[hsl(var(--cyber-cyan))] to-[hsl(var(--cyber-purple))]',
+  level: 'from-primary to-accent',
+  labs: 'from-[hsl(var(--cyber-purple))] to-[hsl(var(--cyber-red))]',
+  streak: 'from-[hsl(var(--cyber-orange))] to-[hsl(var(--cyber-yellow))]',
+  paths: 'from-[hsl(var(--cyber-green))] to-[hsl(var(--cyber-cyan))]',
+  general: 'from-primary to-accent',
+};
 
 export default function Profile() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [pathProgress, setPathProgress] = useState<PathProgress[]>([]);
+  const [allBadges, setAllBadges] = useState<Badge[]>([]);
+  const [earnedBadges, setEarnedBadges] = useState<UserBadge[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,13 +79,13 @@ export default function Profile() {
     Promise.all([
       supabase.from('profiles').select('*').eq('user_id', user.id).single(),
       supabase.from('user_path_progress').select('completed_modules, learning_path:learning_paths(id, title, total_modules, category, difficulty)').eq('user_id', user.id),
-    ]).then(([profileRes, progressRes]) => {
-      if (profileRes.data) {
-        setProfile(profileRes.data as unknown as Profile);
-      }
-      if (progressRes.data) {
-        setPathProgress(progressRes.data as unknown as PathProgress[]);
-      }
+      supabase.from('badges').select('*').order('condition_value', { ascending: true }),
+      supabase.from('user_badges').select('badge_id, earned_at').eq('user_id', user.id),
+    ]).then(([profileRes, progressRes, badgesRes, earnedRes]) => {
+      if (profileRes.data) setProfile(profileRes.data as unknown as Profile);
+      if (progressRes.data) setPathProgress(progressRes.data as unknown as PathProgress[]);
+      if (badgesRes.data) setAllBadges(badgesRes.data as Badge[]);
+      if (earnedRes.data) setEarnedBadges(earnedRes.data as UserBadge[]);
       setLoading(false);
     });
   }, [user]);
@@ -70,14 +105,26 @@ export default function Profile() {
   const nextLevelXp = LEVEL_XP[p.level + 1] || LEVEL_XP[LEVEL_XP.length - 1];
   const xpProgress = nextLevelXp > currentLevelXp ? ((p.xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100 : 100;
 
+  const earnedSet = new Set(earnedBadges.map(eb => eb.badge_id));
+
   const stats = [
-    { icon: Zap, label: 'Total XP', value: p.xp.toLocaleString(), color: 'text-cyber-cyan' },
-    { icon: Target, label: 'Labs Done', value: String(p.completed_labs), color: 'text-cyber-purple' },
-    { icon: Flame, label: 'Streak', value: `${p.streak_days} days`, color: 'text-cyber-orange' },
-    { icon: Award, label: 'Badges', value: String(p.badges_earned), color: 'text-cyber-yellow' },
-    { icon: Shield, label: 'Rank', value: p.rank, color: 'text-cyber-green' },
-    { icon: Calendar, label: 'Joined', value: p.created_at ? new Date(p.created_at).toLocaleDateString() : '—', color: 'text-cyber-red' },
+    { icon: Zap, label: 'Total XP', value: p.xp.toLocaleString(), color: 'text-[hsl(var(--cyber-cyan))]' },
+    { icon: Target, label: 'Labs Done', value: String(p.completed_labs), color: 'text-[hsl(var(--cyber-purple))]' },
+    { icon: Flame, label: 'Streak', value: `${p.streak_days} days`, color: 'text-[hsl(var(--cyber-orange))]' },
+    { icon: Award, label: 'Badges', value: `${earnedBadges.length}/${allBadges.length}`, color: 'text-[hsl(var(--cyber-yellow))]' },
+    { icon: Shield, label: 'Rank', value: p.rank, color: 'text-[hsl(var(--cyber-green))]' },
+    { icon: Calendar, label: 'Joined', value: p.created_at ? new Date(p.created_at).toLocaleDateString() : '—', color: 'text-[hsl(var(--cyber-red))]' },
   ];
+
+  // Group badges by category
+  const categories = ['xp', 'level', 'labs', 'streak', 'paths'];
+  const categoryLabels: Record<string, string> = {
+    xp: '⚡ XP Milestones',
+    level: '🛡️ Level Ranks',
+    labs: '🧪 Lab Completions',
+    streak: '🔥 Streak Goals',
+    paths: '📚 Learning Paths',
+  };
 
   return (
     <DashboardLayout>
@@ -92,7 +139,6 @@ export default function Profile() {
               <h1 className="text-2xl font-bold text-foreground font-mono">{p.display_name || p.username}</h1>
               <p className="text-muted-foreground text-sm">{user?.email}</p>
               <p className="text-primary text-sm font-mono mt-1">{p.rank} · Level {p.level}</p>
-              {/* XP Progress to next level */}
               <div className="mt-3 max-w-xs">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
                   <span>Level {p.level}</span>
@@ -116,6 +162,78 @@ export default function Profile() {
               <div className="text-xs text-muted-foreground">{stat.label}</div>
             </div>
           ))}
+        </div>
+
+        {/* Badges */}
+        <div className="glass-card rounded-xl p-6">
+          <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+            <Award className="h-5 w-5 text-[hsl(var(--cyber-yellow))]" /> 
+            Badges
+            <span className="text-sm font-normal text-muted-foreground ml-2">
+              {earnedBadges.length} of {allBadges.length} earned
+            </span>
+          </h2>
+
+          <TooltipProvider delayDuration={200}>
+            <div className="space-y-6">
+              {categories.map((cat) => {
+                const catBadges = allBadges.filter(b => b.category === cat);
+                if (catBadges.length === 0) return null;
+                return (
+                  <div key={cat}>
+                    <h3 className="text-sm font-semibold text-muted-foreground mb-3 font-mono uppercase tracking-wider">
+                      {categoryLabels[cat]}
+                    </h3>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                      {catBadges.map((badge) => {
+                        const earned = earnedSet.has(badge.id);
+                        const IconComp = ICON_MAP[badge.icon] || Award;
+                        const gradientClass = CATEGORY_COLORS[cat] || CATEGORY_COLORS.general;
+
+                        return (
+                          <Tooltip key={badge.id}>
+                            <TooltipTrigger asChild>
+                              <div className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all cursor-default ${
+                                earned
+                                  ? 'border-primary/30 bg-primary/5 hover:border-primary/50'
+                                  : 'border-border/50 bg-muted/20 opacity-50 hover:opacity-70'
+                              }`}>
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                  earned
+                                    ? `bg-gradient-to-br ${gradientClass} shadow-lg`
+                                    : 'bg-muted/50'
+                                }`}>
+                                  {earned ? (
+                                    <IconComp className="h-6 w-6 text-white" />
+                                  ) : (
+                                    <Lock className="h-5 w-5 text-muted-foreground/50" />
+                                  )}
+                                </div>
+                                <span className={`text-xs font-medium text-center leading-tight ${
+                                  earned ? 'text-foreground' : 'text-muted-foreground'
+                                }`}>
+                                  {badge.name}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[200px] text-center">
+                              <p className="font-semibold text-sm">{badge.name}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{badge.description}</p>
+                              {earned && (
+                                <p className="text-xs text-primary mt-1 font-mono">
+                                  ✓ Earned {new Date(earnedBadges.find(eb => eb.badge_id === badge.id)!.earned_at).toLocaleDateString()}
+                                </p>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </TooltipProvider>
         </div>
 
         {/* Learning Path Progress */}
@@ -152,12 +270,6 @@ export default function Profile() {
               })}
             </div>
           )}
-        </div>
-
-        {/* Badges */}
-        <div className="glass-card rounded-xl p-6">
-          <h2 className="text-xl font-bold text-foreground mb-4">Badges</h2>
-          <p className="text-muted-foreground text-sm">Complete labs and learning paths to earn badges.</p>
         </div>
       </div>
     </DashboardLayout>
