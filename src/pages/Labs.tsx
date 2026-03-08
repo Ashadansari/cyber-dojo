@@ -25,6 +25,7 @@ const diffColor: Record<string, string> = {
 export default function Labs() {
   const [labs, setLabs] = useState<Lab[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     supabase.from('labs').select('*').eq('is_active', true).then(({ data }) => {
