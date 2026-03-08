@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { supabase } from '@/lib/supabase';
-import { Shield, Zap, Target, Award, Flame, Calendar, Loader2, BookOpen, FlaskConical, Lock } from 'lucide-react';
+import { Shield, Zap, Target, Award, Flame, Calendar, Loader2, BookOpen, FlaskConical, Lock, Sun, Moon, Monitor } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
