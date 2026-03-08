@@ -47,6 +47,59 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_challenges: {
+        Row: {
+          code_snippet: string | null
+          created_at: string | null
+          description: string | null
+          flag_answer: string | null
+          hint: string | null
+          id: string
+          lab_id: string
+          options: Json | null
+          order_index: number | null
+          points: number | null
+          title: string
+          type: string
+        }
+        Insert: {
+          code_snippet?: string | null
+          created_at?: string | null
+          description?: string | null
+          flag_answer?: string | null
+          hint?: string | null
+          id?: string
+          lab_id: string
+          options?: Json | null
+          order_index?: number | null
+          points?: number | null
+          title: string
+          type?: string
+        }
+        Update: {
+          code_snippet?: string | null
+          created_at?: string | null
+          description?: string | null
+          flag_answer?: string | null
+          hint?: string | null
+          id?: string
+          lab_id?: string
+          options?: Json | null
+          order_index?: number | null
+          points?: number | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_challenges_lab_id_fkey"
+            columns: ["lab_id"]
+            isOneToOne: false
+            referencedRelation: "labs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       labs: {
         Row: {
           category: string
@@ -266,6 +319,48 @@ export type Database = {
             columns: ["badge_id"]
             isOneToOne: false
             referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_challenge_completions: {
+        Row: {
+          attempts: number | null
+          challenge_id: string
+          completed_at: string | null
+          id: string
+          lab_id: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          challenge_id: string
+          completed_at?: string | null
+          id?: string
+          lab_id: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number | null
+          challenge_id?: string
+          completed_at?: string | null
+          id?: string
+          lab_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenge_completions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "lab_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_challenge_completions_lab_id_fkey"
+            columns: ["lab_id"]
+            isOneToOne: false
+            referencedRelation: "labs"
             referencedColumns: ["id"]
           },
         ]
