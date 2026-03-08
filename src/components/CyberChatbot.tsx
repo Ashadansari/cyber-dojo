@@ -85,7 +85,7 @@ export default function CyberChatbot() {
           className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-cyber shadow-neon flex items-center justify-center hover:scale-110 transition-transform animate-pulse-glow group"
           aria-label="Open CyberBot"
         >
-          <MessageSquare className="h-6 w-6 text-primary-foreground group-hover:scale-110 transition-transform" />
+          <BotLogo className="h-7 w-7 group-hover:scale-110 transition-transform" />
         </button>
       )}
 
