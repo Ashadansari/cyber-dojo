@@ -176,7 +176,7 @@ export default function CyberChatbot() {
             {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
               <div className="flex gap-2.5">
                 <div className="shrink-0 w-7 h-7 rounded-full bg-gradient-cyber flex items-center justify-center">
-                  <Bot className="h-3.5 w-3.5 text-primary-foreground" />
+                  <BotLogo className="h-5 w-5" />
                 </div>
                 <div className="bg-muted/50 rounded-xl px-3 py-2">
                   <div className="flex gap-1">
