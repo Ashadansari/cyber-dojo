@@ -94,7 +94,7 @@ export default function CyberChatbot() {
         <div className="fixed bottom-6 right-6 z-50 w-[380px] h-[560px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl shadow-[hsl(var(--primary)/0.1)] overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gradient-cyber">
-            <Bot className="h-6 w-6 text-primary-foreground" />
+            <BotLogo className="h-6 w-6" />
             <div className="flex-1">
               <h3 className="text-sm font-bold text-primary-foreground font-mono">CyberBot</h3>
               <p className="text-[10px] text-primary-foreground/70">AI Security Tutor</p>
