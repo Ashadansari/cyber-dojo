@@ -119,7 +119,7 @@ export default function CyberChatbot() {
             {messages.length === 0 ? (
               <div className="space-y-4">
                 <div className="text-center py-4">
-                  <Bot className="h-10 w-10 text-primary mx-auto mb-3 opacity-60" />
+                  <BotLogo className="h-10 w-10 mx-auto mb-3 opacity-60" />
                   <p className="text-sm text-muted-foreground">
                     Hey hacker! 👋 I'm <span className="text-primary font-mono">CyberBot</span>, your AI security tutor.
                   </p>
