@@ -153,7 +153,7 @@ export default function CyberChatbot() {
                     {msg.role === 'user' ? (
                       <User className="h-3.5 w-3.5 text-primary" />
                     ) : (
-                      <Bot className="h-3.5 w-3.5 text-primary-foreground" />
+                      <BotLogo className="h-5 w-5" />
                     )}
                   </div>
                   <div className={`max-w-[280px] rounded-xl px-3 py-2 text-sm ${
