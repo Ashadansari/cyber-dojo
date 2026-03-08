@@ -80,14 +80,21 @@ export default function CyberChatbot() {
     <>
       {/* Floating trigger button */}
       {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-4 right-4 z-50 flex items-center justify-center hover:scale-110 transition-transform group drop-shadow-[0_0_16px_hsl(var(--primary)/0.5)] animate-[float_3s_ease-in-out_infinite]"
-          style={{ width: '110px', height: '110px' }}
-          aria-label="Open CyberBot"
-        >
-          <img src="/favicon.png" alt="CyberBot" style={{ width: '110px', height: '110px' }} className="group-hover:scale-110 transition-transform" />
-        </button>
+        <div className="fixed bottom-4 right-4 z-50 group">
+          <div className="absolute -top-10 right-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-card border border-primary/40 rounded-lg px-3 py-1.5 shadow-neon whitespace-nowrap">
+              <p className="text-xs text-primary font-mono">you hacker? talk to me! 💀</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsOpen(true)}
+            className="flex items-center justify-center hover:scale-110 transition-transform drop-shadow-[0_0_16px_hsl(var(--primary)/0.5)] animate-[float_3s_ease-in-out_infinite]"
+            style={{ width: '110px', height: '110px' }}
+            aria-label="Open CyberBot"
+          >
+            <img src="/favicon.png" alt="CyberBot" style={{ width: '110px', height: '110px' }} className="group-hover:scale-110 transition-transform" />
+          </button>
+        </div>
       )}
 
       {/* Chat panel */}
