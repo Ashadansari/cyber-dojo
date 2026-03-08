@@ -82,10 +82,11 @@ export default function CyberChatbot() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-5 right-5 z-50 w-20 h-20 rounded-full flex items-center justify-center hover:scale-110 transition-transform group drop-shadow-[0_0_16px_hsl(var(--primary)/0.5)]"
+          className="fixed bottom-4 right-4 z-50 flex items-center justify-center hover:scale-110 transition-transform group drop-shadow-[0_0_16px_hsl(var(--primary)/0.5)]"
+          style={{ width: '110px', height: '110px' }}
           aria-label="Open CyberBot"
         >
-          <BotLogo className="h-20 w-20 group-hover:scale-110 transition-transform" />
+          <img src="/favicon.png" alt="CyberBot" style={{ width: '110px', height: '110px' }} className="group-hover:scale-110 transition-transform" />
         </button>
       )}
 
