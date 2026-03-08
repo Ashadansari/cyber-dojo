@@ -80,21 +80,14 @@ export default function CyberChatbot() {
     <>
       {/* Floating trigger button */}
       {!isOpen && (
-        <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
-          {/* Speech bubble */}
-          <div className="relative bg-card border border-primary/30 rounded-xl px-4 py-2.5 shadow-neon animate-in fade-in slide-in-from-bottom-2 duration-500 mr-2">
-            <p className="text-sm text-primary font-mono whitespace-nowrap">wanna think out of the box? 🧠</p>
-            <div className="absolute -bottom-2 right-8 w-4 h-4 bg-card border-b border-r border-primary/30 rotate-45" />
-          </div>
-          <button
-            onClick={() => setIsOpen(true)}
-            className="flex items-center justify-center hover:scale-110 transition-transform group drop-shadow-[0_0_16px_hsl(var(--primary)/0.5)]"
-            style={{ width: '110px', height: '110px' }}
-            aria-label="Open CyberBot"
-          >
-            <img src="/favicon.png" alt="CyberBot" style={{ width: '110px', height: '110px' }} className="group-hover:scale-110 transition-transform" />
-          </button>
-        </div>
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-4 right-4 z-50 flex items-center justify-center hover:scale-110 transition-transform group drop-shadow-[0_0_16px_hsl(var(--primary)/0.5)] animate-[float_3s_ease-in-out_infinite]"
+          style={{ width: '110px', height: '110px' }}
+          aria-label="Open CyberBot"
+        >
+          <img src="/favicon.png" alt="CyberBot" style={{ width: '110px', height: '110px' }} className="group-hover:scale-110 transition-transform" />
+        </button>
       )}
 
       {/* Chat panel */}
