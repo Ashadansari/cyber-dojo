@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ const diffColor: Record<string, string> = {
 export default function Labs() {
   const [labs, setLabs] = useState<Lab[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     supabase.from('labs').select('*').eq('is_active', true).then(({ data }) => {
@@ -69,7 +71,7 @@ export default function Labs() {
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <Badge className={`${diffColor[lab.difficulty] || ''} border-0 text-xs font-mono capitalize`}>{lab.difficulty}</Badge>
-                <Button variant="outline" size="sm" className="gap-1.5">
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(`/labs/${lab.id}`)}>
                   <Play className="h-3.5 w-3.5" /> Start
                 </Button>
               </div>
