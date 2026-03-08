@@ -80,7 +80,7 @@ export default function CyberChatbot() {
     <>
       {/* Floating trigger button */}
       {!isOpen && (
-        <div className="fixed bottom-4 right-4 z-50 group">
+        <div className={`fixed bottom-4 z-50 group ${user ? 'right-4' : 'left-4'}`}>
           <div className="absolute -top-10 right-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
             <div className="bg-card border border-primary/40 rounded-lg px-3 py-1.5 shadow-neon whitespace-nowrap">
               <p className="text-xs text-primary font-mono">you hacker? talk to me! 💀</p>
@@ -99,7 +99,7 @@ export default function CyberChatbot() {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-[380px] h-[560px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl shadow-[hsl(var(--primary)/0.1)] overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className={`fixed bottom-6 z-50 w-[380px] h-[560px] flex flex-col rounded-2xl border border-border bg-card shadow-2xl shadow-[hsl(var(--primary)/0.1)] overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300 ${user ? 'right-6' : 'left-6'}`}>
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gradient-cyber">
             <BotLogo className="h-6 w-6" />
