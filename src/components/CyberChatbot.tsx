@@ -5,6 +5,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 
+const BotLogo = ({ className = "h-6 w-6" }: { className?: string }) => (
+  <img src="/favicon.png" alt="CyberBot" className={className} />
+);
 const QUICK_PROMPTS = [
   '🛡️ What learning path should I start with?',
   '🔍 Explain how SQL injection works',
