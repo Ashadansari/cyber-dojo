@@ -68,6 +68,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function Profile() {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [pathProgress, setPathProgress] = useState<PathProgress[]>([]);
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
