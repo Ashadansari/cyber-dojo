@@ -47,6 +47,33 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_daily_usage: {
+        Row: {
+          created_at: string | null
+          id: string
+          message_count: number
+          updated_at: string | null
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message_count?: number
+          updated_at?: string | null
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message_count?: number
+          updated_at?: string | null
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lab_challenges: {
         Row: {
           code_snippet: string | null
