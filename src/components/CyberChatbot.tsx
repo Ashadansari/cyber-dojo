@@ -17,7 +17,7 @@ const QUICK_PROMPTS = [
 
 export default function CyberChatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, isLoading, sendMessage, clearMessages, stopGeneration } = useCyberChat();
+  const { messages, isLoading, sendMessage, clearMessages, stopGeneration, messagesRemaining, limitReached, dailyLimit } = useCyberChat();
   const { user } = useAuth();
   const location = useLocation();
   const [input, setInput] = useState('');
