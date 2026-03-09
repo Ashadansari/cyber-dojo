@@ -37,9 +37,9 @@ serve(async (req) => {
 
   try {
     const { messages, context } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GOOGLE_GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     // Build context-aware system message
@@ -53,43 +53,37 @@ serve(async (req) => {
       if (context.userRank) systemMessage += `- User Rank: ${context.userRank}\n`;
     }
 
-    // Build Gemini-format contents
-    const geminiContents = [];
-
-    // Add conversation messages
-    for (const msg of messages) {
-      geminiContents.push({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
-      });
-    }
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: systemMessage }],
-          },
-          contents: geminiContents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-          },
-        }),
-      }
-    );
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemMessage },
+          ...messages,
+        ],
+        stream: true,
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
+      console.error("AI gateway error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please wait a moment and try again." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted. Please add funds to continue." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -99,57 +93,8 @@ serve(async (req) => {
       );
     }
 
-    // Transform Gemini SSE stream to OpenAI-compatible SSE stream
-    const { readable, writable } = new TransformStream();
-    const writer = writable.getWriter();
-    const encoder = new TextEncoder();
-
-    (async () => {
-      try {
-        const reader = response.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          let newlineIndex;
-          while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
-            let line = buffer.slice(0, newlineIndex);
-            buffer = buffer.slice(newlineIndex + 1);
-            if (line.endsWith("\r")) line = line.slice(0, -1);
-
-            if (!line.startsWith("data: ")) continue;
-            const jsonStr = line.slice(6).trim();
-            if (!jsonStr || jsonStr === "[DONE]") continue;
-
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) {
-                // Convert to OpenAI-compatible SSE format
-                const chunk = {
-                  choices: [{ delta: { content: text } }],
-                };
-                await writer.write(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
-              }
-            } catch {
-              // Skip malformed JSON
-            }
-          }
-        }
-
-        await writer.write(encoder.encode("data: [DONE]\n\n"));
-      } catch (e) {
-        console.error("Stream transform error:", e);
-      } finally {
-        await writer.close();
-      }
-    })();
-
-    return new Response(readable, {
+    // Stream the response directly — Lovable AI Gateway already returns OpenAI-compatible SSE
+    return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
