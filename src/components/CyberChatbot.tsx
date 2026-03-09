@@ -17,7 +17,7 @@ const QUICK_PROMPTS = [
 
 export default function CyberChatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, isLoading, sendMessage, clearMessages, stopGeneration } = useCyberChat();
+  const { messages, isLoading, sendMessage, clearMessages, stopGeneration, messagesRemaining, limitReached, dailyLimit } = useCyberChat();
   const { user } = useAuth();
   const location = useLocation();
   const [input, setInput] = useState('');
@@ -198,6 +198,26 @@ export default function CyberChatbot() {
 
           {/* Input */}
           <div className="p-3 border-t border-border bg-card">
+            {/* Daily usage indicator */}
+            <div className="flex items-center justify-between mb-2">
+              <span className={`text-[10px] font-mono ${limitReached ? 'text-destructive' : 'text-muted-foreground'}`}>
+                {limitReached
+                  ? '🔒 Daily limit reached'
+                  : `💬 ${messagesRemaining}/${dailyLimit} messages left today`}
+              </span>
+              <div className="flex gap-0.5">
+                {Array.from({ length: dailyLimit }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      i < (dailyLimit - messagesRemaining)
+                        ? 'bg-primary'
+                        : 'bg-muted-foreground/20'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
             {isLoading && (
               <button
                 onClick={stopGeneration}
@@ -206,24 +226,30 @@ export default function CyberChatbot() {
                 <Square className="h-3 w-3" /> Stop generating
               </button>
             )}
-            <div className="flex gap-2">
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask CyberBot anything..."
-                className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono"
-                disabled={isLoading}
-              />
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                className="px-3 py-2 rounded-lg bg-gradient-cyber text-primary-foreground disabled:opacity-40 hover:opacity-90 transition-opacity"
-              >
-                <Send className="h-4 w-4" />
-              </button>
-            </div>
+            {limitReached ? (
+              <div className="text-center py-2 text-xs text-muted-foreground">
+                You've used all {dailyLimit} messages today. Come back tomorrow! 🔒
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask CyberBot anything..."
+                  className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 font-mono"
+                  disabled={isLoading}
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || isLoading}
+                  className="px-3 py-2 rounded-lg bg-gradient-cyber text-primary-foreground disabled:opacity-40 hover:opacity-90 transition-opacity"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

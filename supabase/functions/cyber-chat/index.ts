@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const DAILY_MESSAGE_LIMIT = 10;
 
 const SYSTEM_PROMPT = `You are CyberBot, an expert cybersecurity AI tutor built into a hacking training platform similar to TryHackMe. Your role:
 
@@ -40,6 +43,60 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Extract user from auth header
+    const authHeader = req.headers.get("authorization");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    let userId: string | null = null;
+
+    if (authHeader && authHeader !== `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`) {
+      // Try to get user from JWT
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id ?? null;
+    }
+
+    // Check daily limit for authenticated users
+    if (userId) {
+      const today = new Date().toISOString().split("T")[0];
+
+      const { data: usage } = await supabase
+        .from("chat_daily_usage")
+        .select("message_count")
+        .eq("user_id", userId)
+        .eq("usage_date", today)
+        .maybeSingle();
+
+      const currentCount = usage?.message_count ?? 0;
+
+      if (currentCount >= DAILY_MESSAGE_LIMIT) {
+        return new Response(
+          JSON.stringify({
+            error: `Daily limit reached (${DAILY_MESSAGE_LIMIT} messages/day). Come back tomorrow! 🔒`,
+            limit_reached: true,
+            daily_limit: DAILY_MESSAGE_LIMIT,
+            messages_used: currentCount,
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Increment usage
+      if (usage) {
+        await supabase
+          .from("chat_daily_usage")
+          .update({ message_count: currentCount + 1, updated_at: new Date().toISOString() })
+          .eq("user_id", userId)
+          .eq("usage_date", today);
+      } else {
+        await supabase
+          .from("chat_daily_usage")
+          .insert({ user_id: userId, usage_date: today, message_count: 1 });
+      }
     }
 
     // Build context-aware system message
@@ -82,7 +139,7 @@ serve(async (req) => {
 
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add funds to continue." }),
+          JSON.stringify({ error: "AI credits exhausted. Please try again later." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -93,7 +150,6 @@ serve(async (req) => {
       );
     }
 
-    // Stream the response directly — Lovable AI Gateway already returns OpenAI-compatible SSE
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
