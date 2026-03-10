@@ -15,6 +15,7 @@ import Labs from "./pages/Labs";
 import LabDetail from "./pages/LabDetail";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import CyberChatbot from "./components/CyberChatbot";
