@@ -15,6 +15,7 @@ import Labs from "./pages/Labs";
 import LabDetail from "./pages/LabDetail";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import CyberChatbot from "./components/CyberChatbot";
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/labs/:id" element={<ProtectedRoute><LabDetail /></ProtectedRoute>} />
               <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <CyberChatbot />

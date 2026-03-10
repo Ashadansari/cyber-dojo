@@ -23,6 +23,7 @@ const navItems = [
   { title: 'Labs', url: '/labs', icon: FlaskConical },
   { title: 'Leaderboard', url: '/leaderboard', icon: Trophy },
   { title: 'Profile', url: '/profile', icon: User },
+  { title: 'Settings', url: '/settings', icon: Settings },
 ];
 
 const themeOptions = [
