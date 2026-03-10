@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Shield, Terminal, Bug, Crosshair, Zap, Users, Award, ChevronRight } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const categories = [
   { icon: Terminal, title: 'Penetration Testing', desc: 'Master offensive security techniques', color: 'text-cyber-green' },
@@ -19,6 +21,15 @@ const stats = [
 ];
 
 export default function Landing() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
