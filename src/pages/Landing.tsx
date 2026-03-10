@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Shield, Terminal, Bug, Crosshair, Zap, Users, Award, ChevronRight } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const categories = [
   { icon: Terminal, title: 'Penetration Testing', desc: 'Master offensive security techniques', color: 'text-cyber-green' },
