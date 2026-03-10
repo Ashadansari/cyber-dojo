@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { Terminal, Eye, EyeOff, Shield, ArrowRight, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { lovable } from '@/integrations/lovable/index';
 
 export default function Login() {
   const [email, setEmail] = useState('');
