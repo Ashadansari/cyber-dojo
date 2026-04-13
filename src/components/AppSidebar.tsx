@@ -3,6 +3,7 @@ import { NavLink } from '@/components/NavLink';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { UserSearch } from '@/components/UserSearch';
 import {
   Sidebar,
   SidebarContent,
@@ -53,6 +54,10 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
+            {/* User Search */}
+            <div className="mb-2 mt-1">
+              <UserSearch collapsed={collapsed} />
+            </div>
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
@@ -74,7 +79,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-3 border-t border-border space-y-2">
-        {/* User info + settings */}
         <div className="flex items-center gap-2 px-2 py-1.5">
           {!collapsed && user && (
             <div className="flex-1 min-w-0">

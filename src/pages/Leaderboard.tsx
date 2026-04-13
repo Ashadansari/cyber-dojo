@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Trophy, Medal, Award, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { Link } from 'react-router-dom';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -81,9 +82,12 @@ export default function Leaderboard() {
                   >
                     <td className="p-4">{rankIcon(position)}</td>
                     <td className="p-4">
-                      <span className={`font-mono font-medium ${isCurrentUser ? 'text-primary' : 'text-foreground'}`}>
+                      <Link
+                        to={`/user/${entry.user_id}`}
+                        className={`font-mono font-medium hover:underline ${isCurrentUser ? 'text-primary' : 'text-foreground hover:text-primary'}`}
+                      >
                         {entry.display_name || entry.username || 'Anonymous'}
-                      </span>
+                      </Link>
                       {isCurrentUser && <span className="ml-2 text-xs text-primary">(you)</span>}
                     </td>
                     <td className="p-4 text-right font-mono text-xs text-accent hidden sm:table-cell">{entry.rank}</td>
