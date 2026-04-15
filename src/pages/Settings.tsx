@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
@@ -6,23 +6,27 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, User, Settings as SettingsIcon } from 'lucide-react';
+import { Loader2, Save, User, Settings as SettingsIcon, Camera } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     supabase
       .from('profiles')
-      .select('display_name, username, bio')
+      .select('display_name, username, bio, avatar_url')
       .eq('user_id', user.id)
       .single()
       .then(({ data }) => {
@@ -30,10 +34,48 @@ export default function Settings() {
           setDisplayName(data.display_name || '');
           setUsername(data.username || '');
           setBio(data.bio || '');
+          setAvatarUrl(data.avatar_url || null);
         }
         setLoading(false);
       });
   }, [user]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Invalid file', description: 'Please select an image file.', variant: 'destructive' });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'File too large', description: 'Max 2MB allowed.', variant: 'destructive' });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const ext = file.name.split('.').pop();
+    const filePath = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: 'Upload failed', description: uploadError.message, variant: 'destructive' });
+      setUploadingAvatar(false);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const newUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+    await supabase.from('profiles').update({ avatar_url: newUrl }).eq('user_id', user.id);
+    setAvatarUrl(newUrl);
+    setUploadingAvatar(false);
+    toast({ title: 'Avatar updated!' });
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -101,6 +143,36 @@ export default function Settings() {
             <User className="h-5 w-5 text-primary" />
             Profile Details
           </h2>
+
+          {/* Avatar Upload */}
+          <div className="flex items-center gap-6">
+            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+              <Avatar className="h-20 w-20">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt="Profile" />}
+                <AvatarFallback className="bg-gradient-cyber text-primary-foreground text-2xl font-mono font-bold">
+                  {(username || displayName || 'U')[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                {uploadingAvatar ? (
+                  <Loader2 className="h-5 w-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="h-5 w-5 text-white" />
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Profile Picture</p>
+              <p className="text-xs text-muted-foreground">Click to upload (max 2MB)</p>
+            </div>
+          </div>
 
           <div className="space-y-4">
             <div className="space-y-2">

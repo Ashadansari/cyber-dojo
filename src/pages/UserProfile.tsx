@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { Shield, Zap, Target, Award, Flame, Calendar, Loader2, BookOpen, FlaskConical, Lock, UserPlus, UserMinus, Users } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
@@ -12,6 +13,7 @@ interface Profile {
   user_id: string;
   username: string | null;
   display_name: string | null;
+  avatar_url: string | null;
   xp: number;
   level: number;
   rank: string;
@@ -80,7 +82,7 @@ export default function UserProfile() {
   const [followLoading, setFollowLoading] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
-  const [labCompletions, setLabCompletions] = useState<{ lab_id: string; completed_at: string; lab: { title: string; category: string; difficulty: string } }[]>([]);
+  const [labCompletions, setLabCompletions] = useState<any[]>([]);
 
   const isOwnProfile = user?.id === userId;
 
@@ -107,7 +109,6 @@ export default function UserProfile() {
       setFollowingCount(followingRes.count || 0);
       if (labsRes.data) setLabCompletions(labsRes.data as any);
 
-      // Check if current user follows this profile
       if (user && user.id !== userId) {
         const { data } = await supabase.from('follows').select('id').eq('follower_id', user.id).eq('following_id', userId).maybeSingle();
         setIsFollowing(!!data);
@@ -184,9 +185,12 @@ export default function UserProfile() {
         {/* Profile Header */}
         <div className="glass-card rounded-xl p-8">
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-full bg-gradient-cyber flex items-center justify-center text-3xl font-bold text-primary-foreground font-mono">
-              {(p.username || 'H')[0]?.toUpperCase()}
-            </div>
+            <Avatar className="h-20 w-20">
+              {p.avatar_url && <AvatarImage src={p.avatar_url} alt={p.display_name || p.username || ''} />}
+              <AvatarFallback className="bg-gradient-cyber text-3xl font-bold text-primary-foreground font-mono">
+                {(p.username || 'H')[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1">
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold text-foreground font-mono">{p.display_name || p.username}</h1>
@@ -206,8 +210,12 @@ export default function UserProfile() {
               {p.bio && <p className="text-muted-foreground text-sm mt-1">{p.bio}</p>}
               <p className="text-primary text-sm font-mono mt-1">{p.rank} · Level {p.level}</p>
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {followerCount} followers</span>
-                <span>{followingCount} following</span>
+                <Link to={`/user/${userId}/connections?tab=followers`} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                  <Users className="h-4 w-4" /> <strong className="text-foreground">{followerCount}</strong> followers
+                </Link>
+                <Link to={`/user/${userId}/connections?tab=following`} className="hover:text-foreground transition-colors">
+                  <strong className="text-foreground">{followingCount}</strong> following
+                </Link>
               </div>
               <div className="mt-3 max-w-xs">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
@@ -292,11 +300,11 @@ export default function UserProfile() {
               <FlaskConical className="h-5 w-5 text-[hsl(var(--cyber-purple))]" /> Completed Labs
             </h2>
             <div className="space-y-2">
-              {labCompletions.map((lc) => (
+              {labCompletions.map((lc: any) => (
                 <div key={lc.lab_id} className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border">
                   <div>
-                    <p className="font-medium text-foreground text-sm">{(lc.lab as any)?.title || 'Lab'}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{(lc.lab as any)?.category} · {(lc.lab as any)?.difficulty}</p>
+                    <p className="font-medium text-foreground text-sm">{lc.lab?.title || 'Lab'}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{lc.lab?.category} · {lc.lab?.difficulty}</p>
                   </div>
                   <span className="text-xs text-muted-foreground font-mono">{new Date(lc.completed_at).toLocaleDateString()}</span>
                 </div>
