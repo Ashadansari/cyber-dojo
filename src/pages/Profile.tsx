@@ -3,13 +3,15 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { supabase } from '@/lib/supabase';
-import { Shield, Zap, Target, Award, Flame, Calendar, Loader2, BookOpen, FlaskConical, Lock, Sun, Moon, Monitor } from 'lucide-react';
+import { Shield, Zap, Target, Award, Flame, Calendar, Loader2, BookOpen, FlaskConical, Lock, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface Profile {
   username: string | null;
   display_name: string | null;
+  avatar_url: string | null;
   xp: number;
   level: number;
   rank: string;
@@ -73,6 +75,8 @@ export default function Profile() {
   const [pathProgress, setPathProgress] = useState<PathProgress[]>([]);
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [earnedBadges, setEarnedBadges] = useState<UserBadge[]>([]);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -83,11 +87,15 @@ export default function Profile() {
       supabase.from('user_path_progress').select('completed_modules, learning_path:learning_paths(id, title, total_modules, category, difficulty)').eq('user_id', user.id),
       supabase.from('badges').select('*').order('condition_value', { ascending: true }),
       supabase.from('user_badges').select('badge_id, earned_at').eq('user_id', user.id),
-    ]).then(([profileRes, progressRes, badgesRes, earnedRes]) => {
+      supabase.from('follows').select('id', { count: 'exact' }).eq('following_id', user.id),
+      supabase.from('follows').select('id', { count: 'exact' }).eq('follower_id', user.id),
+    ]).then(([profileRes, progressRes, badgesRes, earnedRes, followersRes, followingRes]) => {
       if (profileRes.data) setProfile(profileRes.data as unknown as Profile);
       if (progressRes.data) setPathProgress(progressRes.data as unknown as PathProgress[]);
       if (badgesRes.data) setAllBadges(badgesRes.data as Badge[]);
       if (earnedRes.data) setEarnedBadges(earnedRes.data as UserBadge[]);
+      setFollowerCount(followersRes.count || 0);
+      setFollowingCount(followingRes.count || 0);
       setLoading(false);
     });
   }, [user]);
@@ -102,7 +110,7 @@ export default function Profile() {
     );
   }
 
-  const p = profile || { username: 'Hacker', display_name: 'Hacker', xp: 0, level: 1, rank: 'Script Kiddie', streak_days: 0, completed_labs: 0, badges_earned: 0, created_at: user?.created_at || '', bio: null };
+  const p = profile || { username: 'Hacker', display_name: 'Hacker', avatar_url: null, xp: 0, level: 1, rank: 'Script Kiddie', streak_days: 0, completed_labs: 0, badges_earned: 0, created_at: user?.created_at || '', bio: null };
   const currentLevelXp = LEVEL_XP[p.level] || 0;
   const nextLevelXp = LEVEL_XP[p.level + 1] || LEVEL_XP[LEVEL_XP.length - 1];
   const xpProgress = nextLevelXp > currentLevelXp ? ((p.xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100 : 100;
@@ -118,7 +126,6 @@ export default function Profile() {
     { icon: Calendar, label: 'Joined', value: p.created_at ? new Date(p.created_at).toLocaleDateString() : '—', color: 'text-[hsl(var(--cyber-red))]' },
   ];
 
-  // Group badges by category
   const categories = ['xp', 'level', 'labs', 'streak', 'paths'];
   const categoryLabels: Record<string, string> = {
     xp: '⚡ XP Milestones',
@@ -134,13 +141,25 @@ export default function Profile() {
         {/* Profile Header */}
         <div className="glass-card rounded-xl p-8">
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-full bg-gradient-cyber flex items-center justify-center text-3xl font-bold text-primary-foreground font-mono">
-              {(p.username || 'H')[0]?.toUpperCase()}
-            </div>
+            <Avatar className="h-20 w-20">
+              {p.avatar_url && <AvatarImage src={p.avatar_url} alt={p.display_name || p.username || ''} />}
+              <AvatarFallback className="bg-gradient-cyber text-3xl font-bold text-primary-foreground font-mono">
+                {(p.username || 'H')[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-foreground font-mono">{p.display_name || p.username}</h1>
               <p className="text-muted-foreground text-sm">{user?.email}</p>
+              {p.bio && <p className="text-muted-foreground text-sm mt-1">{p.bio}</p>}
               <p className="text-primary text-sm font-mono mt-1">{p.rank} · Level {p.level}</p>
+              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                <Link to={`/user/${user?.id}/connections?tab=followers`} className="flex items-center gap-1 hover:text-foreground transition-colors">
+                  <Users className="h-4 w-4" /> <strong className="text-foreground">{followerCount}</strong> followers
+                </Link>
+                <Link to={`/user/${user?.id}/connections?tab=following`} className="hover:text-foreground transition-colors">
+                  <strong className="text-foreground">{followingCount}</strong> following
+                </Link>
+              </div>
               <div className="mt-3 max-w-xs">
                 <div className="flex justify-between text-xs text-muted-foreground mb-1 font-mono">
                   <span>Level {p.level}</span>
@@ -169,13 +188,9 @@ export default function Profile() {
         {/* Badges */}
         <div className="glass-card rounded-xl p-6">
           <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-            <Award className="h-5 w-5 text-[hsl(var(--cyber-yellow))]" /> 
-            Badges
-            <span className="text-sm font-normal text-muted-foreground ml-2">
-              {earnedBadges.length} of {allBadges.length} earned
-            </span>
+            <Award className="h-5 w-5 text-[hsl(var(--cyber-yellow))]" /> Badges
+            <span className="text-sm font-normal text-muted-foreground ml-2">{earnedBadges.length} of {allBadges.length} earned</span>
           </h2>
-
           <TooltipProvider delayDuration={200}>
             <div className="space-y-6">
               {categories.map((cat) => {
@@ -183,39 +198,22 @@ export default function Profile() {
                 if (catBadges.length === 0) return null;
                 return (
                   <div key={cat}>
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-3 font-mono uppercase tracking-wider">
-                      {categoryLabels[cat]}
-                    </h3>
+                    <h3 className="text-sm font-semibold text-muted-foreground mb-3 font-mono uppercase tracking-wider">{categoryLabels[cat]}</h3>
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                       {catBadges.map((badge) => {
                         const earned = earnedSet.has(badge.id);
                         const IconComp = ICON_MAP[badge.icon] || Award;
                         const gradientClass = CATEGORY_COLORS[cat] || CATEGORY_COLORS.general;
-
                         return (
                           <Tooltip key={badge.id}>
                             <TooltipTrigger asChild>
                               <div className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border transition-all cursor-default ${
-                                earned
-                                  ? 'border-primary/30 bg-primary/5 hover:border-primary/50'
-                                  : 'border-border/50 bg-muted/20 opacity-50 hover:opacity-70'
+                                earned ? 'border-primary/30 bg-primary/5 hover:border-primary/50' : 'border-border/50 bg-muted/20 opacity-50 hover:opacity-70'
                               }`}>
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                                  earned
-                                    ? `bg-gradient-to-br ${gradientClass} shadow-lg`
-                                    : 'bg-muted/50'
-                                }`}>
-                                  {earned ? (
-                                    <IconComp className="h-6 w-6 text-white" />
-                                  ) : (
-                                    <Lock className="h-5 w-5 text-muted-foreground/50" />
-                                  )}
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${earned ? `bg-gradient-to-br ${gradientClass} shadow-lg` : 'bg-muted/50'}`}>
+                                  {earned ? <IconComp className="h-6 w-6 text-white" /> : <Lock className="h-5 w-5 text-muted-foreground/50" />}
                                 </div>
-                                <span className={`text-xs font-medium text-center leading-tight ${
-                                  earned ? 'text-foreground' : 'text-muted-foreground'
-                                }`}>
-                                  {badge.name}
-                                </span>
+                                <span className={`text-xs font-medium text-center leading-tight ${earned ? 'text-foreground' : 'text-muted-foreground'}`}>{badge.name}</span>
                               </div>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-[200px] text-center">

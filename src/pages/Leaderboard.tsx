@@ -4,11 +4,13 @@ import { Trophy, Medal, Award, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { Link } from 'react-router-dom';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface LeaderboardEntry {
   user_id: string;
   username: string | null;
   display_name: string | null;
+  avatar_url: string | null;
   xp: number;
   level: number;
   rank: string;
@@ -30,7 +32,7 @@ export default function Leaderboard() {
   useEffect(() => {
     supabase
       .from('profiles')
-      .select('user_id, username, display_name, xp, level, rank, completed_labs')
+      .select('user_id, username, display_name, avatar_url, xp, level, rank, completed_labs')
       .order('xp', { ascending: false })
       .limit(50)
       .then(({ data }) => {
@@ -84,8 +86,14 @@ export default function Leaderboard() {
                     <td className="p-4">
                       <Link
                         to={`/user/${entry.user_id}`}
-                        className={`font-mono font-medium hover:underline ${isCurrentUser ? 'text-primary' : 'text-foreground hover:text-primary'}`}
+                        className={`font-mono font-medium hover:underline flex items-center gap-3 ${isCurrentUser ? 'text-primary' : 'text-foreground hover:text-primary'}`}
                       >
+                        <Avatar className="h-8 w-8">
+                          {entry.avatar_url && <AvatarImage src={entry.avatar_url} alt={entry.display_name || ''} />}
+                          <AvatarFallback className="bg-gradient-cyber text-primary-foreground text-xs font-mono font-bold">
+                            {(entry.username || entry.display_name || 'A')[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
                         {entry.display_name || entry.username || 'Anonymous'}
                       </Link>
                       {isCurrentUser && <span className="ml-2 text-xs text-primary">(you)</span>}
