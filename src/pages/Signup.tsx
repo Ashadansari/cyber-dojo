@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Terminal, Eye, EyeOff, Shield, ArrowRight, Loader2, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { lovable } from '@/integrations/lovable/index';
+import { supabase } from '@/lib/supabase';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -18,12 +19,32 @@ export default function Signup() {
   const { signUp, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [stats, setStats] = useState({ labs: 0, paths: 0, users: 0 });
 
   useEffect(() => {
     if (!authLoading && user) {
       navigate('/dashboard', { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const [labsRes, pathsRes, usersRes] = await Promise.all([
+        supabase.from('labs').select('*', { count: 'exact', head: true }),
+        supabase.from('learning_paths').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      ]);
+      setStats({ labs: labsRes.count ?? 0, paths: pathsRes.count ?? 0, users: usersRes.count ?? 0 });
+    };
+    fetchStats();
+    const channel = supabase
+      .channel('signup-stats')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'labs' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'learning_paths' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchStats)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const passwordChecks = useMemo(() => [
     { label: 'At least 8 characters', pass: password.length >= 8 },
@@ -32,10 +53,15 @@ export default function Signup() {
     { label: 'Passwords match', pass: confirmPassword.length > 0 && password === confirmPassword },
   ], [password, confirmPassword]);
 
+  const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val.trim());
   const allValid = passwordChecks.every(c => c.pass) && username.length >= 3;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      toast({ title: 'Invalid email', description: 'Please enter a valid email address.', variant: 'destructive' });
+      return;
+    }
     if (!allValid) {
       toast({ title: 'Check requirements', description: 'Please meet all the password requirements.', variant: 'destructive' });
       return;
@@ -82,9 +108,9 @@ export default function Signup() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { value: '500+', label: 'Labs' },
-              { value: '50+', label: 'Paths' },
-              { value: '100K+', label: 'Hackers' },
+              { value: stats.labs.toLocaleString(), label: 'Labs' },
+              { value: stats.paths.toLocaleString(), label: 'Paths' },
+              { value: stats.users.toLocaleString(), label: 'Hackers' },
             ].map((stat) => (
               <div key={stat.label} className="glass-card rounded-lg p-3 text-center">
                 <div className="text-xl font-bold text-gradient-cyber font-mono">{stat.value}</div>
