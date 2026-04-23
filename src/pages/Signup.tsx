@@ -108,9 +108,9 @@ export default function Signup() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { value: '500+', label: 'Labs' },
-              { value: '50+', label: 'Paths' },
-              { value: '100K+', label: 'Hackers' },
+              { value: stats.labs.toLocaleString(), label: 'Labs' },
+              { value: stats.paths.toLocaleString(), label: 'Paths' },
+              { value: stats.users.toLocaleString(), label: 'Hackers' },
             ].map((stat) => (
               <div key={stat.label} className="glass-card rounded-lg p-3 text-center">
                 <div className="text-xl font-bold text-gradient-cyber font-mono">{stat.value}</div>
