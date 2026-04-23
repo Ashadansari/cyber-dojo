@@ -79,6 +79,7 @@ function buildHeatmapData() {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { name: profileName } = useProfileName();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [paths, setPaths] = useState<PathProgress[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -219,7 +220,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Welcome back, <span className="text-gradient-cyber">{useProfileName().name}</span>
+            Welcome back, <span className="text-gradient-cyber">{profileName}</span>
           </h1>
           <p className="text-muted-foreground mt-1">Continue your cybersecurity training</p>
         </div>
