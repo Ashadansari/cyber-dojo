@@ -23,14 +23,25 @@ export default function Login() {
     }
   }, [user, authLoading, navigate]);
 
+  const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val.trim());
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      toast({ title: 'Invalid email', description: 'Please enter a valid email address.', variant: 'destructive' });
+      return;
+    }
     setLoading(true);
     try {
       await signIn(email, password);
       navigate('/dashboard');
     } catch (err: any) {
-      toast({ title: 'Authentication failed', description: err.message, variant: 'destructive' });
+      const msg = String(err?.message || '');
+      if (/email.*not.*confirmed|not\s*confirmed|verify/i.test(msg)) {
+        toast({ title: 'Email not verified', description: 'Please check your inbox and verify your email before signing in.', variant: 'destructive' });
+      } else {
+        toast({ title: 'Authentication failed', description: msg || 'Invalid credentials.', variant: 'destructive' });
+      }
     } finally {
       setLoading(false);
     }

@@ -32,10 +32,15 @@ export default function Signup() {
     { label: 'Passwords match', pass: confirmPassword.length > 0 && password === confirmPassword },
   ], [password, confirmPassword]);
 
+  const isValidEmail = (val: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val.trim());
   const allValid = passwordChecks.every(c => c.pass) && username.length >= 3;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      toast({ title: 'Invalid email', description: 'Please enter a valid email address.', variant: 'destructive' });
+      return;
+    }
     if (!allValid) {
       toast({ title: 'Check requirements', description: 'Please meet all the password requirements.', variant: 'destructive' });
       return;
