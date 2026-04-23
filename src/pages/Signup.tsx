@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Terminal, Eye, EyeOff, Shield, ArrowRight, Loader2, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { lovable } from '@/integrations/lovable/index';
+import { supabase } from '@/lib/supabase';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -18,12 +19,32 @@ export default function Signup() {
   const { signUp, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [stats, setStats] = useState({ labs: 0, paths: 0, users: 0 });
 
   useEffect(() => {
     if (!authLoading && user) {
       navigate('/dashboard', { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const [labsRes, pathsRes, usersRes] = await Promise.all([
+        supabase.from('labs').select('*', { count: 'exact', head: true }),
+        supabase.from('learning_paths').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+      ]);
+      setStats({ labs: labsRes.count ?? 0, paths: pathsRes.count ?? 0, users: usersRes.count ?? 0 });
+    };
+    fetchStats();
+    const channel = supabase
+      .channel('signup-stats')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'labs' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'learning_paths' }, fetchStats)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchStats)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const passwordChecks = useMemo(() => [
     { label: 'At least 8 characters', pass: password.length >= 8 },
