@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfileName } from '@/hooks/useProfileName';
 import { supabase } from '@/lib/supabase';
 import { Shield, Zap, Target, Award, Flame, TrendingUp, Loader2, BookOpen, FlaskConical, CheckCircle, Clock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -78,6 +79,7 @@ function buildHeatmapData() {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { name: profileName } = useProfileName();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [paths, setPaths] = useState<PathProgress[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -218,7 +220,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Welcome back, <span className="text-gradient-cyber">{user?.user_metadata?.username || 'Hacker'}</span>
+            Welcome back, <span className="text-gradient-cyber">{profileName}</span>
           </h1>
           <p className="text-muted-foreground mt-1">Continue your cybersecurity training</p>
         </div>

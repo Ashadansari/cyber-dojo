@@ -2,6 +2,7 @@ import { LayoutDashboard, BookOpen, FlaskConical, Trophy, User, LogOut, Terminal
 import { NavLink } from '@/components/NavLink';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfileName } from '@/hooks/useProfileName';
 import { useTheme } from '@/hooks/useTheme';
 import { UserSearch } from '@/components/UserSearch';
 import {
@@ -37,6 +38,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const { signOut, user } = useAuth();
+  const { name } = useProfileName();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -82,7 +84,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-2 px-2 py-1.5">
           {!collapsed && user && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{user.user_metadata?.username || 'Hacker'}</p>
+              <p className="text-sm font-medium text-foreground truncate">{name}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             </div>
           )}
