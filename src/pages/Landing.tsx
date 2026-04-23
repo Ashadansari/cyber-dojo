@@ -80,14 +80,17 @@ export default function Landing() {
 
       {/* Hero with hacker background */}
       <section className="relative pt-32 pb-20 overflow-hidden min-h-[80vh] flex items-center">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${hackerBg})` }}
+        <img
+          src={hackerBg}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          width={1920}
+          height={1080}
           aria-hidden="true"
         />
-        <div className="absolute inset-0 bg-background/75 backdrop-blur-[2px]" aria-hidden="true" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" aria-hidden="true" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(142_72%_45%/0.12),transparent_60%)]" aria-hidden="true" />
+        <div className="absolute inset-0 bg-background/55" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background" aria-hidden="true" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(142_72%_45%/0.15),transparent_60%)]" aria-hidden="true" />
 
         <div className="container relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-background/60 backdrop-blur text-primary text-sm font-mono mb-8">
